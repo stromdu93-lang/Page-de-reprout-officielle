@@ -1,0 +1,526 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>SIGNALEMENT • REPROUT DU JOUEUR</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<style>
+:root{
+  --panel: rgba(10,20,50,.78);
+  --text:#eaf2ff;
+  --muted:#9bbcff;
+  --blue:#1f6fff;
+  --cyan:#38bdf8;
+  --line: rgba(56,189,248,.22);
+  --shadow: 0 0 50px rgba(31,111,255,.35);
+  --r:18px;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+  color:var(--text);
+  background:
+    radial-gradient(1200px 600px at 20% 10%, rgba(31,111,255,.20), transparent 55%),
+    radial-gradient(900px 500px at 80% 20%, rgba(56,189,248,.14), transparent 55%),
+    linear-gradient(180deg, #010316, #010316 60%, #00030b);
+  overflow:hidden;
+}
+
+/* Scanlines */
+.scanlines{
+  position:fixed; inset:0; pointer-events:none; z-index:-1;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(255,255,255,.05),
+    rgba(255,255,255,.05) 1px,
+    transparent 1px,
+    transparent 6px
+  );
+  opacity:.16;
+  mix-blend-mode: overlay;
+  animation: scanMove 9s linear infinite;
+}
+@keyframes scanMove{ from{transform:translateY(0)} to{transform:translateY(60px)} }
+
+/* Header */
+header{
+  position:sticky; top:0;
+  padding:14px 16px;
+  text-align:center;
+  background: rgba(0,0,0,.55);
+  border-bottom: 1px solid rgba(31,111,255,.55);
+  backdrop-filter: blur(8px);
+}
+header .top{
+  display:flex; align-items:center; justify-content:center; gap:10px;
+  font-weight:900;
+  letter-spacing:.14em;
+}
+header .top .badge{
+  font-size:11px;
+  padding:6px 10px;
+  border:1px solid var(--line);
+  border-radius:999px;
+  background: rgba(8,18,42,.55);
+  box-shadow: 0 0 20px rgba(31,111,255,.18);
+}
+header h1{ margin:6px 0 0; font-size:22px; }
+header p{ margin:6px 0 0; color:var(--muted); font-size:12px; }
+
+/* Layout */
+main{
+  height: calc(100vh - 78px);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:16px;
+}
+.card{
+  width: min(560px, 94vw);
+  background: var(--panel);
+  border: 1px solid rgba(56,189,248,.28);
+  border-radius: var(--r);
+  padding:16px;
+  box-shadow: var(--shadow);
+  position:relative;
+  overflow:hidden;
+}
+.card::before{
+  content:"";
+  position:absolute; inset:0;
+  background:
+    radial-gradient(600px 240px at 20% 0%, rgba(31,111,255,.22), transparent 62%),
+    radial-gradient(500px 200px at 80% 0%, rgba(56,189,248,.16), transparent 62%);
+  opacity:.7;
+  pointer-events:none;
+}
+.block{ position:relative; z-index:1; }
+.title{
+  font-weight:1000;
+  letter-spacing:.08em;
+  font-size:16px;
+  margin:0 0 10px;
+  display:flex; align-items:center; gap:10px;
+}
+.title .dot{
+  width:10px; height:10px; border-radius:999px;
+  background: #ff3b3b;
+  box-shadow: 0 0 18px rgba(255,59,59,.45);
+  animation: blink 1.2s ease-in-out infinite;
+}
+@keyframes blink{ 0%,100%{opacity:.45} 50%{opacity:1} }
+
+.line{
+  border:1px solid rgba(56,189,248,.18);
+  border-radius:14px;
+  padding:12px;
+  background: rgba(2,6,23,.35);
+}
+.label{ color:var(--muted); font-size:12px; margin:0 0 6px; }
+select, textarea{
+  width:100%;
+  border-radius:14px;
+  border:1px solid rgba(56,189,248,.28);
+  background: rgba(2,6,23,.45);
+  color: var(--text);
+  outline:none;
+  padding:10px 12px;
+  transition: .15s ease;
+}
+select:focus, textarea:focus{
+  border-color: rgba(56,189,248,.55);
+  box-shadow: 0 0 0 4px rgba(31,111,255,.16);
+}
+textarea{ height:120px; resize:none; }
+
+.row{ display:flex; gap:10px; margin-top:10px; flex-wrap:wrap; }
+.btn{
+  border:none;
+  border-radius:14px;
+  padding:10px 12px;
+  font-weight:1000;
+  cursor:pointer;
+  color: white;
+  background: rgba(2,6,23,.35);
+  border:1px solid rgba(56,189,248,.22);
+  transition: transform .12s ease, filter .12s ease;
+}
+.btn:hover{ transform: translateY(-1px); filter: brightness(1.06); }
+.btn:active{ transform: translateY(0px) scale(.99); }
+.btn.primary{
+  width:100%;
+  padding:14px 14px;
+  font-size:16px;
+  background: linear-gradient(135deg, rgba(31,111,255,.90), rgba(56,189,248,.45));
+  border:1px solid rgba(56,189,248,.35);
+  box-shadow: 0 18px 45px rgba(31,111,255,.18);
+}
+.small{ font-size:12px; color:var(--muted); margin:10px 0 0; }
+
+/* Toast */
+#toast{
+  position:fixed;
+  bottom:18px;
+  left:50%;
+  transform:translateX(-50%) translateY(14px);
+  background: rgba(8,18,42,.78);
+  border:1px solid rgba(56,189,248,.28);
+  border-radius:999px;
+  padding:10px 14px;
+  opacity:0;
+  transition:.25s ease;
+  z-index:50;
+  box-shadow: 0 18px 40px rgba(0,0,0,.45);
+}
+#toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+
+/* Stickers */
+.decor{ position:fixed; inset:0; pointer-events:none; }
+.sticker{
+  pointer-events:auto;
+  position:absolute;
+  width: 320px;
+  height: 200px;
+  background:none;
+  border:none;
+  cursor:pointer;
+  opacity:.70;
+  transition:.2s;
+  padding:0;
+}
+.sticker img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  border-radius:18px;
+  border:1px solid rgba(56,189,248,.28);
+  box-shadow: 0 0 35px rgba(31,111,255,.34);
+  filter: saturate(1.05) contrast(1.04);
+}
+.sticker:hover{ opacity:.95; transform:scale(1.03); }
+.sticker .tag{
+  position:absolute;
+  right:10px;
+  bottom:10px;
+  width:34px; height:34px;
+  border-radius:999px;
+  display:grid; place-items:center;
+  background: rgba(0,0,0,.55);
+  border:1px solid rgba(56,189,248,.25);
+  font-weight:900;
+}
+.sticker.playing img{
+  box-shadow: 0 0 55px rgba(56,189,248,.24), 0 0 80px rgba(31,111,255,.20);
+}
+.s1{ left: 3%; top: 16%; transform: rotate(-5deg); }
+.s2{ right: 4%; top: 14%; transform: rotate(6deg); }
+.s3{ left: 5%; bottom: 10%; transform: rotate(5deg); }
+.s4{ right: 6%; bottom: 8%; transform: rotate(-6deg); }
+@media (max-width: 1000px){ .sticker{ width: 260px; height: 165px; opacity:.6; } }
+@media (max-width: 720px){ .sticker{ display:none; } }
+
+/* Interactive icons */
+.padfield{
+  margin-top:12px;
+  display:flex;
+  gap:12px;
+  justify-content:center;
+  flex-wrap:wrap;
+}
+.pad{
+  width:52px; height:52px;
+  border-radius:16px;
+  display:grid; place-items:center;
+  background: rgba(8,18,42,.55);
+  border:1px solid rgba(56,189,248,.22);
+  box-shadow: 0 0 22px rgba(31,111,255,.14);
+  cursor:pointer;
+  user-select:none;
+  transition:.15s;
+}
+.pad:hover{ transform: translateY(-2px) scale(1.03); filter:brightness(1.08); }
+.pad:active{ transform: scale(.98); }
+.pad.spin{ animation: spin .45s ease-in-out; }
+@keyframes spin{ from{transform:rotate(0)} to{transform:rotate(360deg)} }
+
+.shake{ animation: shake .35s ease-in-out; }
+@keyframes shake{
+  0%,100%{ transform: translate3d(0,0,0); }
+  20%{ transform: translate3d(-4px,0,0); }
+  40%{ transform: translate3d(4px,0,0); }
+  60%{ transform: translate3d(-3px,0,0); }
+  80%{ transform: translate3d(3px,0,0); }
+}
+</style>
+</head>
+
+<body>
+<div class="scanlines"></div>
+
+<!-- DECOR IMAGES (bons noms d’après ta capture) -->
+<div class="decor" aria-hidden="false">
+  <button class="sticker s1" data-audio="audio-pierro" aria-label="Pierro (audio)">
+    <img src="assets/pierro.png" alt="">
+    <span class="tag">▶</span>
+  </button>
+  <button class="sticker s2" data-audio="audio-mael" aria-label="Maël (audio)">
+    <img src="assets/mael.png" alt="">
+    <span class="tag">▶</span>
+  </button>
+  <button class="sticker s3" data-audio="audio-hugo" aria-label="Hugo (audio)">
+    <img src="assets/hugo.png" alt="">
+    <span class="tag">▶</span>
+  </button>
+  <button class="sticker s4" data-audio="audio-axel" aria-label="Axel (audio)">
+    <img src="assets/axel.png" alt="">
+    <span class="tag">▶</span>
+  </button>
+</div>
+
+<!-- AUDIOS (bons noms) -->
+<audio id="audio-pierro" src="assets/audio-pierro.mp3" preload="auto"></audio>
+<audio id="audio-mael"   src="assets/audio-mael.mp3"   preload="auto"></audio>
+<audio id="audio-hugo"   src="assets/audio-hugo.mp3"   preload="auto"></audio>
+<audio id="audio-axel"   src="assets/audio-axel.mp3"   preload="auto"></audio>
+
+<header>
+  <div class="top">
+    <span class="badge">LIVE</span>
+    <span>SIGNALEMENT</span>
+    <span class="badge">REPROUT</span>
+  </div>
+  <h1>REPROUT DU JOUEUR</h1>
+  <p id="subjectLine">Objet : <b>Accusé de reprout</b></p>
+</header>
+
+<main>
+  <div class="card" id="card">
+    <div class="block">
+      <div class="title"><span class="dot"></span>Formulaire de signalement</div>
+
+      <div class="line" style="margin-bottom:12px;">
+        <div class="label">Qui envoie (le joueur)</div>
+        <select id="sender">
+          <option value="Maël">Maël</option>
+          <option value="Pierrick">Pierrick</option>
+          <option value="Hugo">Hugo</option>
+          <option value="Axel">Axel</option>
+        </select>
+
+        <div class="label" style="margin-top:10px;">Qui est reprout (la cible)</div>
+        <select id="target">
+          <option value="Maël">Maël</option>
+          <option value="Pierrick">Pierrick</option>
+          <option value="Hugo">Hugo</option>
+          <option value="Axel">Axel</option>
+        </select>
+
+        <div class="row" style="margin-top:10px;">
+          <button type="button" class="btn" id="copyAll">Copier les 4 mails</button>
+          <button type="button" class="btn" id="fillAuto">Auto-texte</button>
+        </div>
+      </div>
+
+      <div class="line">
+        <div class="label">Message (personnalisé)</div>
+        <textarea id="message" placeholder="Décris le reprout..."></textarea>
+
+        <button class="btn primary" id="send">🚀 REPROUT</button>
+
+        <p class="small" id="sendLine">Envoi à : —</p>
+      </div>
+
+      <div class="padfield" aria-label="icones interactives">
+        <div class="pad" title="Click">🎮</div>
+        <div class="pad" title="Click">🕹️</div>
+        <div class="pad" title="Click">🧩</div>
+        <div class="pad" title="Click">💿</div>
+        <div class="pad" title="Click">🏆</div>
+        <div class="pad" title="Click">⚡</div>
+      </div>
+
+      <p class="small" style="text-align:center;margin-top:12px;">
+        Astuce : clique sur les images autour pour lancer leurs audios.
+      </p>
+    </div>
+  </div>
+</main>
+
+<div id="toast">✅ Prêt à envoyer !</div>
+
+<script>
+/* ========= DESTINATAIRES FIXES ========= */
+const RECIPIENTS = [
+  "mael.kazins@gmail.com",
+  "pierrick.marinier83@outlook.fr",
+  "hugo.santos34070@outlook.fr",
+  "axelkrausz@gmail.com"
+].join(",");
+
+/* ========= UI ========= */
+const senderSel = document.getElementById("sender");
+const targetSel = document.getElementById("target");
+const msgEl = document.getElementById("message");
+const sendBtn = document.getElementById("send");
+const toast = document.getElementById("toast");
+const card = document.getElementById("card");
+const subjectLine = document.getElementById("subjectLine");
+const sendLine = document.getElementById("sendLine");
+
+function enc(s){ return encodeURIComponent(s); }
+function showToast(text="✅ Prêt à envoyer !"){
+  toast.textContent = text;
+  toast.classList.add("show");
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(()=>toast.classList.remove("show"), 1200);
+}
+function getSubject(){
+  const s = senderSel.value;
+  const t = targetSel.value;
+  return `Accusé de reprout : Le joueur ${s} reprout ${t}`;
+}
+function updateLines(){
+  const subj = getSubject();
+  subjectLine.innerHTML = `Objet : <b>${subj}</b>`;
+  sendLine.textContent = `Envoi à : ${RECIPIENTS.replaceAll(",", " • ")}`;
+}
+updateLines();
+senderSel.addEventListener("change", updateLines);
+targetSel.addEventListener("change", updateLines);
+
+/* Copy all mails */
+document.getElementById("copyAll").addEventListener("click", async ()=>{
+  try{
+    await navigator.clipboard.writeText(RECIPIENTS.replaceAll(",", " "));
+    showToast("📋 Les 4 mails copiés");
+  }catch{
+    showToast("⚠️ Copie impossible ici");
+  }
+});
+
+/* Auto text */
+document.getElementById("fillAuto").addEventListener("click", ()=>{
+  const s = senderSel.value;
+  const t = targetSel.value;
+  msgEl.value =
+`SIGNALEMENT — REPROUT DU JOUEUR
+
+Le joueur ${s} reprout ${t}.
+Objet : ${getSubject()}
+
+Détails : `;
+  msgEl.focus();
+});
+
+/* Send */
+sendBtn.addEventListener("click", (e)=>{
+  e.preventDefault();
+  const txt = msgEl.value.trim();
+  if(!txt){
+    card.classList.add("shake");
+    setTimeout(()=>card.classList.remove("shake"), 380);
+    return;
+  }
+  const subject = getSubject();
+  showToast("✅ Mail ouvert");
+  const link = `mailto:${RECIPIENTS}?subject=${enc(subject)}&body=${enc(txt)}`;
+  window.location.href = link;
+});
+
+/* ========= AUDIO STICKERS (fix GitHub Pages) ========= */
+const stickerBtns = Array.from(document.querySelectorAll(".sticker[data-audio]"));
+const audios = Array.from(document.querySelectorAll("audio"));
+
+function stopAllAudio(){
+  stickerBtns.forEach(b=>{
+    b.classList.remove("playing");
+    const tag = b.querySelector(".tag");
+    if(tag) tag.textContent = "▶";
+  });
+  audios.forEach(a=>{
+    try{ a.pause(); a.currentTime = 0; }catch{}
+  });
+}
+
+async function safePlay(audio){
+  try{
+    audio.load();        // important sur Pages
+    audio.currentTime = 0;
+    await audio.play();
+    return true;
+  }catch(err){
+    showToast("🔇 Audio bloqué : clique encore / vérifie mp3");
+    return false;
+  }
+}
+
+stickerBtns.forEach(btn=>{
+  btn.addEventListener("click", async ()=>{
+    const id = btn.getAttribute("data-audio");
+    const audio = document.getElementById(id);
+    if(!audio){
+      showToast("❌ Audio introuvable");
+      return;
+    }
+
+    // toggle pause
+    const isPlaying = !audio.paused && audio.currentTime > 0;
+    if(isPlaying){
+      audio.pause();
+      btn.classList.remove("playing");
+      btn.querySelector(".tag").textContent = "▶";
+      showToast("⏸ pause");
+      return;
+    }
+
+    stopAllAudio();
+    const ok = await safePlay(audio);
+    if(ok){
+      btn.classList.add("playing");
+      btn.querySelector(".tag").textContent = "⏸";
+      showToast("🔊 audio");
+    }
+    audio.onended = ()=>{
+      btn.classList.remove("playing");
+      btn.querySelector(".tag").textContent = "▶";
+    };
+  });
+});
+
+/* ========= ICONS INTERACTIVE (beep) ========= */
+let audioCtx = null;
+function beep(){
+  try{
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    const o = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    o.type = "square";
+    o.frequency.value = 680;
+    g.gain.value = 0.03;
+    o.connect(g);
+    g.connect(audioCtx.destination);
+    o.start();
+    setTimeout(()=>{ o.stop(); }, 60);
+  }catch{}
+}
+document.querySelectorAll(".pad").forEach(p=>{
+  p.addEventListener("click", ()=>{
+    beep();
+    p.classList.add("spin");
+    setTimeout(()=>p.classList.remove("spin"), 480);
+    showToast("🎮 click");
+  });
+});
+
+/* Shortcut R => send */
+window.addEventListener("keydown", (ev)=>{
+  if(ev.key.toLowerCase() === "r"){
+    sendBtn.click();
+  }
+});
+</script>
+</body>
+</html>
