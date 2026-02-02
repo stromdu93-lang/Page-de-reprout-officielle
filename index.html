@@ -418,14 +418,27 @@ Détails : `;
 /* Send */
 sendBtn.addEventListener("click", (e)=>{
   e.preventDefault();
+
   const txt = msgEl.value.trim();
   if(!txt){
     card.classList.add("shake");
     setTimeout(()=>card.classList.remove("shake"), 380);
     return;
   }
+
+  // 🔔 NOTIF DISCORD
+  fetch("https://reprout-discord.stromdu93.workers.dev", {
+    method: "POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({
+      sender: senderSel.value,
+      target: targetSel.value,
+      text: txt
+    })
+  }).catch(()=>{});
+
+  // 📧 MAIL
   const subject = getSubject();
-  showToast("✅ Mail ouvert");
   const link = `mailto:${RECIPIENTS}?subject=${enc(subject)}&body=${enc(txt)}`;
   window.location.href = link;
 });
@@ -524,3 +537,4 @@ window.addEventListener("keydown", (ev)=>{
 </script>
 </body>
 </html>
+
