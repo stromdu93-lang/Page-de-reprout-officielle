@@ -426,7 +426,9 @@ sendBtn.addEventListener("click", (e)=>{
     return;
   }
 
-  // 🔔 NOTIF DISCORD
+  const subject = getSubject();
+
+  // 🔔 ENVOI DISCORD (TOUJOURS)
   fetch("https://reprout-discord.stromdu93.workers.dev", {
     method: "POST",
     headers: {"Content-Type":"application/json"},
@@ -437,10 +439,11 @@ sendBtn.addEventListener("click", (e)=>{
     })
   }).catch(()=>{});
 
-  // 📧 MAIL
-  const subject = getSubject();
-  const link = `mailto:${RECIPIENTS}?subject=${enc(subject)}&body=${enc(txt)}`;
-  window.location.href = link;
+  // ⏱️ LÉGER DÉLAI PUIS MAIL
+  setTimeout(()=>{
+    const link = `mailto:${RECIPIENTS}?subject=${enc(subject)}&body=${enc(txt)}`;
+    window.location.href = link;
+  }, 350);
 });
 
 /* ========= AUDIO STICKERS (fix GitHub Pages) ========= */
@@ -537,4 +540,5 @@ window.addEventListener("keydown", (ev)=>{
 </script>
 </body>
 </html>
+
 
